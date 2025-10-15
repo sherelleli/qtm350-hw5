@@ -1,0 +1,155 @@
+---
+title: "World Indicators — 2022"
+author: "Sherelle"
+date: 2025-10-05
+format:
+  html:
+    toc: true
+  pdf:
+    pdf-engine: xelatex
+    fig-width: 5
+    fig-height: 3
+    margin-left: 1in
+    margin-right: 1in
+execute:
+  echo: true
+  warning: false
+  cache: false
+bibliography: references.bib
+jupyter: python3
+---
+
+```{python}
+import pandas as pd
+import wbgapi as wb
+```
+
+```{python}
+indicators = {
+    'gdp_per_capita': 'NY.GDP.PCAP.CD',
+    'gdp_growth_rate': 'NY.GDP.MKTP.KD.ZG',
+    'inflation_rate': 'FP.CPI.TOTL.ZG',
+    'unemployment_rate': 'SL.UEM.TOTL.ZS',
+    'total_population': 'SP.POP.TOTL',
+    'life_expectancy': 'SP.DYN.LE00.IN',
+    'adult_literacy_rate': 'SE.ADT.LITR.ZS',
+    'income_inequality': 'SI.POV.GINI',
+    'health_expenditure_gdp_share': 'SH.XPD.CHEX.GD.ZS',
+    'measles_immunisation_rate': 'SH.IMM.MEAS',
+    'education_expenditure_gdp_share': 'SE.XPD.TOTL.GD.ZS',
+    'primary_school_enrolment_rate': 'SE.PRM.ENRR',
+    'exports_gdp_share': 'NE.EXP.GNFS.ZS'
+}
+
+# Get the list of country codes for the "World" region
+country_codes = wb.region.members('WLD')
+
+# Download data for countries only in 2022
+df = wb.data.DataFrame(indicators.values(), economy=country_codes, time=2022, skipBlanks=True, labels=True).reset_index()
+
+# Delete the 'economy' column
+df = df.drop(columns=['economy'], errors='ignore')
+
+# Create a reversed dictionary mapping indicator codes to names
+# Rename the columns and convert all names to lowercase
+df.rename(columns=lambda x: {v: k for k, v in indicators.items()}.get(x, x).lower(), inplace=True)
+
+# Sort 'country' in ascending order
+df = df.sort_values('country', ascending=True)
+
+# Reset the index after sorting
+df = df.reset_index(drop=True)
+
+# Display the number of rows and columns
+print(df.shape)
+
+# Display the first few rows of the data
+print(df.head(3))
+
+# Save the data to a CSV file
+df.to_csv('wdi.csv', index=False)
+```
+
+This report explores selected 2022 World Development Indicators:
+- GDP per capita (USD)
+- Life expectancy (years)
+- Inflation rate (%)
+These represent key economic, demographic, and financial dimensions across countries.
+
+```{python}
+import pandas as pd
+
+df = pd.read_csv("wdi.csv")
+df = df[["country", "gdp_per_capita", "life_expectancy", "inflation_rate"]].dropna()
+df.head(3)
+```
+
+Exploratory Data Analysis
+```{python}
+#| label: tbl-summary
+#| tbl-cap: "Key statistics for indicators (2022)."
+desc = df[["gdp_per_capita", "life_expectancy", "inflation_rate"]].describe().T.reset_index()
+desc.rename(columns={"index": "indicator"}, inplace=True)
+desc
+```
+
+GDP per capita averages about $17,468 with a very wide range, indicating large cross-country inequality. Life expectancy averages 72.9 years with most countries between roughly 68 and 78. Inflation averages 12.7% and is highly dispersed.
+
+```{python}
+n_countries = df["country"].nunique()
+n_countries
+```
+
+
+```{python}
+corr = df[["gdp_per_capita", "life_expectancy", "inflation_rate"]].corr()
+corr
+```
+
+Interpretation: GDP per capita and life expectancy are moderately positively correlated (r ≈ 0.60). Inflation shows weak negative correlations with both variables.
+
+Visualizations
+Figure: Life expectancy vs GDP per capita
+```{python}
+import matplotlib.pyplot as plt
+#| label: fig-scatter
+#| fig-cap: "Life expectancy vs GDP per capita (2022) [@worldbankWDI]."
+#| echo: false
+import matplotlib.pyplot as plt
+plt.figure()
+plt.scatter(df["gdp_per_capita"], df["life_expectancy"], alpha=0.7)
+plt.xlabel("GDP per capita (USD)")
+plt.ylabel("Life expectancy (years)")
+```
+
+Figure: Inflation rate distribution across countries
+```{python}
+#| label: fig-hist
+#| fig-cap: "Distribution of inflation rates (2022) [@worldbankWDI]."
+#| echo: false
+plt.figure()
+plt.hist(df["inflation_rate"].dropna(), bins=20)
+plt.xlabel("Inflation rate (%)")
+plt.ylabel("Number of countries")
+```
+
+Figure: Top 10 GDP per capita countries
+```{python}
+#| label: fig-bar
+#| fig-cap: "Top 10 countries by GDP per capita (2022)[@worldbankWDI]."
+#| echo: false
+top10 = df.sort_values("gdp_per_capita", ascending=False).head(10).iloc[::-1]
+plt.figure()
+plt.barh(top10["country"], top10["gdp_per_capita"])
+plt.xlabel("GDP per capita (USD)")
+```
+
+As shown in Figure @fig-scatter, higher GDP per capita generally aligns with longer life expectancy. The spread of inflation across countries in Figure @fig-hist, together with the skewed top incomes in Figure @fig-bar, explains why dispersion in Table @tbl-summary is large.
+
+Indicators come from the World Development Indicators accessed via wbgapi [@wdi; @wbgapi]. Analysis uses pandas and matplotlib [@mckinney2010; @hunter2007].
+
+```{python}
+# Export dataset for slides to reuse
+df.to_csv("world_indicators_2022.csv", index=False)
+```
+

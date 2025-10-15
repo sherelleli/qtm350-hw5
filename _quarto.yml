@@ -1,0 +1,11 @@
+project:
+  type: website
+  output-dir: docs
+  render:
+    - 05_report.qmd
+    - 05_slides.qmd
+
+jupyter: python3
+
+execute:
+  kernel: python3

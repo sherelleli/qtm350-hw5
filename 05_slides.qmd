@@ -1,0 +1,103 @@
+---
+title: "World Indicators — 2022 (Slides)"
+author: "Sherelle Li"
+date: today
+format:
+  revealjs:
+    theme: league
+    transition: convex
+    slide-number: true
+    scroll: true
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+# Title
+World Indicators (2022)
+
+---
+
+## Data Used in Slides
+```{python}
+import pandas as pd, matplotlib.pyplot as plt
+```
+
+# Overview
+- Data: World Development Indicators via **wbgapi**  
+- Indicators: GDP per capita (USD), Life expectancy (years), Inflation rate (%)  
+- Tools: pandas and matplotlib  
+- Year: 2022  
+
+# Load Data
+```{python}
+import pandas as pd, matplotlib.pyplot as plt
+import os
+df = pd.read_csv("wdi.csv")
+df = df[["country", "gdp_per_capita", "life_expectancy", "inflation_rate"]].dropna()
+```
+
+# Summary Statistics
+```{python}
+desc = df[["gdp_per_capita", "life_expectancy", "inflation_rate"]].describe().T.reset_index()
+desc.rename(columns={"index": "indicator"}, inplace=True)
+desc
+```
+
+GDP per capita averages about $17,468 with wide dispersion.
+Life expectancy averages 72.9 years, typically between 68–78.
+Inflation averages 12.7%, showing high variation.
+
+# Correlation
+```{python}
+corr = df[["gdp_per_capita", "life_expectancy", "inflation_rate"]].corr()
+corr
+```
+
+GDP per capita and life expectancy are moderately positively correlated (r ≈ 0.6).
+Inflation shows weak negative correlations with both variables.
+
+# Life Expectancy vs GDP per Capita
+```{python}
+plt.figure()
+plt.scatter(df["gdp_per_capita"], df["life_expectancy"], alpha=0.7)
+plt.xlabel("GDP per capita (USD)")
+plt.ylabel("Life expectancy (years)")
+plt.title("Life expectancy vs GDP per capita (2022)")
+plt.show()
+```
+
+Higher GDP per capita generally aligns with longer life expectancy.
+
+# Inflation Distribution
+```{python}
+plt.figure()
+plt.hist(df["inflation_rate"].dropna(), bins=20)
+plt.xlabel("Inflation rate (%)")
+plt.ylabel("Number of countries")
+plt.title("Distribution of Inflation Rates (2022)")
+plt.show()
+```
+
+Inflation rates are highly skewed, with some extreme outliers.
+
+# Top 10 GDP per Capita Countries
+```{python}
+top10 = df.sort_values("gdp_per_capita", ascending=False).head(10).iloc[::-1]
+plt.figure()
+plt.barh(top10["country"], top10["gdp_per_capita"])
+plt.xlabel("GDP per capita (USD)")
+plt.title("Top 10 Countries by GDP per Capita (2022)")
+plt.show()
+```
+
+Wealth is concentrated among a small group of countries.
+
+# Conclusion
+Economic and health outcomes remain uneven globally.
+Strong GDP–life expectancy link highlights the role of economic development.
+Inflation disparities reflect diverse fiscal conditions.
+
+# References
+World Bank (2022). World Development Indicators (WDI).
